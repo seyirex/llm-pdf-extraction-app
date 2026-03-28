@@ -1,0 +1,108 @@
+services:
+  llm-redis:
+    container_name: llm-pdf-extraction-redis
+    image: redis:7-alpine
+    command: redis-server --appendonly ${REDIS_APPENDONLY:-yes} --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy ${REDIS_MAXMEMORY_POLICY:-allkeys-lru}
+    restart: unless-stopped
+    expose:
+      - "${REDIS_PORT:-6379}"
+    ports:
+      - "${REDIS_EXTERNAL_PORT:-6381}:${REDIS_PORT:-6379}"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  llm-api:
+    container_name: llm-pdf-extraction-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    user: "0:0"
+    command: uvicorn src.main:app --host 0.0.0.0 --port ${APP_PORT:-8083}
+    ports:
+      - "${APP_PORT:-8083}:${APP_PORT:-8083}"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://llm-redis:${REDIS_PORT:-6379}/0}
+      - UPLOAD_DIR=${UPLOAD_DIR:-/app/data/uploads}
+      - OUTPUT_DIR=${OUTPUT_DIR:-/app/data/outputs}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-10}
+      - APP_PORT=${APP_PORT:-8083}
+    volumes:
+      - upload-data:/app/data/uploads
+      - output-data:/app/data/outputs
+    depends_on:
+      llm-redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os,urllib.request; port=os.getenv('APP_PORT','8083'); urllib.request.urlopen('http://localhost:%s/health' % port, timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  llm-worker:
+    container_name: llm-pdf-extraction-worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A src.celery_app:celery_app worker --loglevel=${CELERY_LOG_LEVEL:-info} --concurrency=${CELERY_CONCURRENCY:-2} --queues=documents,default
+    restart: unless-stopped
+    user: "0:0"
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=${REDIS_URL:-redis://llm-redis:${REDIS_PORT:-6379}/0}
+      - UPLOAD_DIR=${UPLOAD_DIR:-/app/data/uploads}
+      - OUTPUT_DIR=${OUTPUT_DIR:-/app/data/outputs}
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-10}
+    volumes:
+      - upload-data:/app/data/uploads
+      - output-data:/app/data/outputs
+    depends_on:
+      llm-redis:
+        condition: service_healthy
+      llm-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "1.5"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  redis-data:
+  upload-data:
+  output-data:

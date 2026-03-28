@@ -1,0 +1,21 @@
+# Core
+fastapi==0.128.8
+uvicorn[standard]==0.39.0
+python-multipart==0.0.20
+pydantic==2.12.5
+pydantic-settings==2.11.0
+
+# Async task queue
+celery==5.6.3
+redis==7.0.1
+
+# LLM
+google-genai==1.68.0
+
+# Logging
+loguru==0.7.3
+
+# Testing
+pytest==8.4.2
+pytest-asyncio==1.2.0
+httpx==0.28.1
