@@ -3,6 +3,7 @@ Response utilities for consistent API responses.
 """
 
 from typing import Any, Optional
+from fastapi import status
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -14,6 +15,50 @@ class StandardResponse(BaseModel):
     error: Optional[str] = None
     exceptionError: Optional[str] = None
     message: Optional[str] = None
+
+
+DOWNLOAD_FILE_RESPONSES: dict[int, dict[str, Any]] = {
+    status.HTTP_200_OK: {
+        "content": {"text/plain": {}},
+        "description": "Generated TXT file",
+    },
+    status.HTTP_401_UNAUTHORIZED: {
+        "model": StandardResponse,
+        "description": "Missing or invalid API key",
+    },
+    status.HTTP_404_NOT_FOUND: {
+        "model": StandardResponse,
+        "description": "Task or generated file not found",
+    },
+    status.HTTP_409_CONFLICT: {
+        "model": StandardResponse,
+        "description": "Task has not completed yet",
+    },
+    status.HTTP_500_INTERNAL_SERVER_ERROR: {
+        "model": StandardResponse,
+        "description": "Task result is malformed or server is misconfigured",
+    },
+}
+
+
+PDF_FILE_RESPONSES: dict[int, dict[str, Any]] = {
+    status.HTTP_200_OK: {
+        "content": {"application/pdf": {}},
+        "description": "Uploaded PDF file",
+    },
+    status.HTTP_401_UNAUTHORIZED: {
+        "model": StandardResponse,
+        "description": "Missing or invalid API key",
+    },
+    status.HTTP_404_NOT_FOUND: {
+        "model": StandardResponse,
+        "description": "Task or uploaded PDF not found",
+    },
+    status.HTTP_500_INTERNAL_SERVER_ERROR: {
+        "model": StandardResponse,
+        "description": "Server is misconfigured",
+    },
+}
 
 
 def generate_response(

@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, UploadFile, File, status
 from fastapi.responses import JSONResponse
 
-from src.api.dependencies import get_task_service
+from src.api.dependencies import get_task_service, verify_api_key
 from src.config import settings
 from src.services.task_service import TaskService
 from src.utils.responses import generate_response
@@ -20,6 +20,7 @@ router = APIRouter()
 )
 async def upload_pdf(
     file: UploadFile = File(..., description="PDF file to process"),
+    _auth: None = Depends(verify_api_key),
     task_service: TaskService = Depends(get_task_service),
 ) -> JSONResponse:
     """Upload a PDF file and start async processing.

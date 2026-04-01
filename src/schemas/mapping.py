@@ -1,6 +1,6 @@
 """Pydantic models for mapped output data."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MappedHeader(BaseModel):
@@ -65,8 +65,8 @@ class MappedHeader(BaseModel):
         description="Total quantity",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "lieferanschrift": "Musterbau & Holztechnik GmbH",
                 "kommission": "U2025-30770",
@@ -81,6 +81,7 @@ class MappedHeader(BaseModel):
                 "gesamt": "15",
             }
         }
+    )
 
 
 class MappedPosition(BaseModel):
@@ -140,8 +141,8 @@ class MappedPosition(BaseModel):
         description="Dimension from remark (e.g., '180mm') or '0'",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "line": 1,
                 "stueck": "1",
@@ -155,6 +156,7 @@ class MappedPosition(BaseModel):
                 "bemerkung_nummer": "180mm",
             }
         }
+    )
 
 
 class MappedResult(BaseModel):
@@ -174,8 +176,8 @@ class MappedResult(BaseModel):
         description="List of mapped position rows",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "header": {
                     "lieferanschrift": "Musterbau & Holztechnik GmbH",
@@ -206,3 +208,4 @@ class MappedResult(BaseModel):
                 ],
             }
         }
+    )

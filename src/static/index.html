@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RollDocs — PDF Extraction</title>
+    <title>PDF Extraction</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,11 +20,31 @@
                         <polyline points="14 2 14 8 20 8"/>
                     </svg>
                 </div>
-                <span class="brand-name">RollDocs</span>
+                <span class="brand-name">PdfExtractor</span>
             </div>
             <div class="navbar-status" id="navbar-status">
                 <span class="status-dot"></span>
                 <span class="status-label">Ready</span>
+            </div>
+            <a
+                class="swagger-link"
+                href="/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Swagger API documentation"
+            >
+                API Docs
+            </a>
+            <div class="auth-controls" id="auth-controls" hidden>
+                <span class="auth-mode-label" id="auth-mode-label">Auth</span>
+                <input
+                    id="api-key-input"
+                    class="api-key-input"
+                    type="password"
+                    placeholder="Enter API key"
+                    autocomplete="off"
+                >
+                <button id="save-api-key-btn" class="btn btn-sm btn-ghost" type="button">Save Key</button>
             </div>
         </div>
     </nav>
@@ -137,7 +157,25 @@
 
                 <div id="warnings-container" class="warnings-card" hidden></div>
 
-                <div class="card results-card">
+                <div class="results-layout" id="results-layout">
+                    <details id="pdf-preview-details" class="pdf-preview-accordion card">
+                        <summary class="pdf-preview-summary">
+                            <span class="pdf-preview-title-wrap">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                </svg>
+                                <span class="card-title">PDF Preview</span>
+                            </span>
+                            <span class="pdf-preview-toggle-label">Expand preview</span>
+                        </summary>
+                        <div class="pdf-preview-container">
+                            <iframe id="pdf-iframe" class="pdf-iframe" title="PDF Preview"></iframe>
+                        </div>
+                    </details>
+
+                    <div class="data-panel">
+                        <div class="card results-card">
                     <div class="card-header">
                         <div class="results-tabs">
                             <button class="tab-btn active" data-tab="table">
@@ -208,6 +246,7 @@
                             <pre id="mapped-json" class="json-code"></pre>
                         </div>
                     </div>
+                </div>
                 </div>
             </section>
 

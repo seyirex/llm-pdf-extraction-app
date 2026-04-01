@@ -8,30 +8,46 @@ from src.utils.logger import get_logger
 
 logger = get_logger()
 
+POSITION_LABELS: dict[str, str] = {
+    "links": "L",
+    "rechts": "R",
+}
+
+
+def _sanitize_value(value: str) -> str:
+    """Replace newlines and excess whitespace with a single space."""
+    return " ".join(value.replace("\r", "").replace("\n", " ").split())
+
 
 def generate_txt_content(mapped: MappedResult) -> str:
     """Generate tab-separated TXT content from mapped data.
 
-    Produces a header row (11 columns) followed by one row per
-    position (10 columns each), all tab-separated.
+    Produces a readable header section with one field per line,
+    then a positions section with tab-separated columns.
 
     Args:
         mapped: The fully mapped result data.
 
     Returns:
-        Tab-separated string content for the output file.
+        Text content for the output file.
     """
     header_dict = mapped.header.model_dump()
-    header_values = [str(header_dict[col]) for col in HEADER_COLUMNS]
-    header_row = "\t".join(header_values)
+    key_width = max(len(col) for col in HEADER_COLUMNS)
+    header_lines = [
+        f"{col.ljust(key_width)} : {_sanitize_value(str(header_dict[col]))}"
+        for col in HEADER_COLUMNS
+    ]
 
+    position_label_row = "\t".join(
+        POSITION_LABELS.get(col, col) for col in POSITION_COLUMNS
+    )
     position_rows: list[str] = []
     for position in mapped.positions:
         pos_dict = position.model_dump()
-        pos_values = [str(pos_dict[col]) for col in POSITION_COLUMNS]
+        pos_values = [_sanitize_value(str(pos_dict[col])) for col in POSITION_COLUMNS]
         position_rows.append("\t".join(pos_values))
 
-    lines = [header_row] + position_rows
+    lines = ["HEADER"] + header_lines + ["", "POSITIONS", position_label_row] + position_rows
     return "\n".join(lines)
 
 

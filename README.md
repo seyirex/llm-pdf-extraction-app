@@ -36,21 +36,26 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The app will be available at **http://localhost:8000**
-
-### Docker Pull
-
-```bash
-docker pull <your-dockerhub-username>/llm-pdf-extraction-app:latest
-```
+The app will be available at **http://localhost:8083**
 
 ## Services
 
 | Service | Purpose | Port |
 |---------|---------|------|
-| `llm-api` | FastAPI web server | 8000 |
+| `llm-api` | FastAPI web server | 8083 |
 | `llm-worker` | Celery worker for PDF processing | — |
 | `llm-redis` | Redis broker/backend | 6379 |
+
+## Container Healthchecks
+
+The Docker Compose healthcheck cadence is configured as:
+
+| Service | Interval | Timeout | Retries | Start Period |
+|---------|----------|---------|---------|--------------|
+| `llm-redis` | `2h` | `5s` | `5` | `5s` |
+| `llm-api` | `2h` | `10s` | `3` | `15s` |
+
+`llm-worker` does not define a healthcheck in `docker-compose.yml`.
 
 ## API Endpoints
 
@@ -60,6 +65,7 @@ docker pull <your-dockerhub-username>/llm-pdf-extraction-app:latest
 | `GET` | `/api/v1/status/{task_id}` | Poll task processing status |
 | `GET` | `/api/v1/result/{task_id}` | Get extracted + mapped data as JSON |
 | `GET` | `/api/v1/download/{task_id}` | Download generated `.txt` file |
+| `GET` | `/api/v1/auth/config` | Get frontend auth toggle + header config |
 
 ## Processing Pipeline
 
@@ -111,3 +117,6 @@ tests/                   # Unit + integration + API tests
 |----------|-------------|---------|
 | `GEMINI_API_KEY` | Google Gemini API key | — |
 | `REDIS_URL` | Redis connection URL | `redis://llm-redis:6379/0` |
+| `API_KEY_AUTH_ENABLED` | Enable API key auth (`true`/`false`) | `false` |
+| `API_KEY` | Required API key when auth is enabled | — |
+| `API_KEY_HEADER_NAME` | Header name used for API key | `x-api-key` |

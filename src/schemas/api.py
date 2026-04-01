@@ -1,6 +1,6 @@
 """API request/response models."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class UploadResponse(BaseModel):
@@ -20,13 +20,14 @@ class UploadResponse(BaseModel):
         description="Human-readable status message",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "message": "PDF uploaded and processing started",
             }
         }
+    )
 
 
 class StatusResponse(BaseModel):
@@ -51,14 +52,15 @@ class StatusResponse(BaseModel):
         description="Current pipeline step if task is in progress",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "status": "PROGRESS",
                 "step": "mapping",
             }
         }
+    )
 
 
 class ResultResponse(BaseModel):
@@ -93,16 +95,17 @@ class ResultResponse(BaseModel):
         description="Auto-corrections applied during validation",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "task_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                 "extracted": {"header": {}, "positions": []},
                 "mapped": {"header": {}, "positions": []},
                 "warnings": ["Gesamt mismatch: header says 15, sum is 14"],
-                "corrections": ["'Weift' → 'Weiß'"],
+                "corrections": ["'Weift' -> 'Weiss'"],
             }
         }
+    )
 
 
 class ErrorResponse(BaseModel):
@@ -117,9 +120,10 @@ class ErrorResponse(BaseModel):
         description="Error description",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "detail": "File must be a PDF",
             }
         }
+    )

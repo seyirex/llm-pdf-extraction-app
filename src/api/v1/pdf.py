@@ -1,4 +1,4 @@
-"""Download endpoint — serves generated TXT file as attachment."""
+"""PDF preview endpoint — serves uploaded PDF inline for browser rendering."""
 
 from fastapi import APIRouter, Depends, Response, status
 from starlette.responses import FileResponse
@@ -6,35 +6,34 @@ from starlette.responses import FileResponse
 from src.api.dependencies import get_task_service, verify_api_key
 from src.services.task_service import TaskService
 from src.utils.exceptions import AppException
-from src.utils.responses import DOWNLOAD_FILE_RESPONSES, generate_response
+from src.utils.responses import PDF_FILE_RESPONSES, generate_response
 
 router = APIRouter()
 
 
 @router.get(
-    "/download/{task_id}",
+    "/pdf/{task_id}",
     response_class=FileResponse,
     status_code=status.HTTP_200_OK,
-    responses=DOWNLOAD_FILE_RESPONSES,
-    summary="Download generated TXT file",
-    description="Serves the generated tab-separated TXT file "
-    "as a downloadable attachment for a completed task.",
+    responses=PDF_FILE_RESPONSES,
+    summary="Preview uploaded PDF",
+    description="Serves the uploaded PDF file inline for browser rendering.",
 )
-def download_txt(
+def preview_pdf(
     task_id: str,
     _auth: None = Depends(verify_api_key),
     task_service: TaskService = Depends(get_task_service),
 ) -> Response:
-    """Download the generated TXT file for a completed task.
+    """Return the uploaded PDF for inline browser preview.
 
     Args:
         task_id: Celery task ID from the upload response.
 
     Returns:
-        FileResponse with the TXT file, or JSONResponse on error.
+        FileResponse with the PDF (inline), or JSONResponse on error.
     """
     try:
-        txt_path = task_service.get_download_path(task_id)
+        pdf_path = task_service.get_pdf_path(task_id)
     except AppException as exc:
         return generate_response(
             success=False,
@@ -44,7 +43,6 @@ def download_txt(
         )
 
     return FileResponse(
-        path=str(txt_path),
-        filename=f"output_{task_id}.txt",
-        media_type="text/plain",
+        path=str(pdf_path),
+        media_type="application/pdf",
     )

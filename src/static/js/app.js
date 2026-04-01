@@ -29,6 +29,12 @@
     const retryBtn = document.getElementById("retry-btn");
     const errorMessage = document.getElementById("error-message");
     const navbarStatus = document.getElementById("navbar-status");
+    const pdfIframe = document.getElementById("pdf-iframe");
+    const pdfPreviewDetails = document.getElementById("pdf-preview-details");
+    const authControls = document.getElementById("auth-controls");
+    const authModeLabel = document.getElementById("auth-mode-label");
+    const apiKeyInput = document.getElementById("api-key-input");
+    const saveApiKeyBtn = document.getElementById("save-api-key-btn");
 
     // Summary elements
     const summaryPositions = document.getElementById("summary-positions");
@@ -37,6 +43,10 @@
 
     let currentTaskId = null;
     let pollTimer = null;
+    let authEnabled = false;
+    let authHeaderName = "x-api-key";
+
+    const STORAGE_API_KEY = "rolldocs_api_key";
 
     // ===== State Management =====
     function showSection(section) {
@@ -63,12 +73,91 @@
         showSection(errorSection);
     }
 
+    function getApiKey() {
+        return (apiKeyInput && apiKeyInput.value ? apiKeyInput.value.trim() : "");
+    }
+
+    function ensureApiKeyConfigured() {
+        if (!authEnabled) return true;
+
+        const key = getApiKey();
+        if (key) return true;
+
+        showError("API key is required. Enter it in the top-right field and try again.");
+        if (apiKeyInput) apiKeyInput.focus();
+        return false;
+    }
+
+    function buildAuthHeaders() {
+        if (!authEnabled) return {};
+        const key = getApiKey();
+        return key ? { [authHeaderName]: key } : {};
+    }
+
+    async function apiFetch(path, options = {}) {
+        const headers = {
+            ...(options.headers || {}),
+            ...buildAuthHeaders(),
+        };
+
+        const response = await fetch(`${API_BASE}${path}`, {
+            ...options,
+            headers,
+        });
+
+        if (response.status === 401) {
+            showError("Unauthorized. Check your API key and try again.");
+        }
+
+        return response;
+    }
+
+    async function initializeAuth() {
+        try {
+            const response = await fetch(`${API_BASE}/auth/config`);
+            if (!response.ok) return;
+
+            const payload = await response.json();
+            const data = payload.data || {};
+            authEnabled = parseEnabledFlag(data.enabled);
+            authHeaderName = String(data.header_name || "x-api-key");
+
+            if (!authControls || !apiKeyInput || !authModeLabel) return;
+            authModeLabel.textContent = authEnabled ? "Auth On" : "Auth Off";
+
+            if (authEnabled) {
+                authControls.hidden = false;
+                const savedKey = localStorage.getItem(STORAGE_API_KEY) || "";
+                apiKeyInput.value = savedKey;
+            } else {
+                authControls.hidden = true;
+            }
+        } catch (err) {
+            // Keep app usable if auth config endpoint is unavailable.
+        }
+    }
+
+    function saveApiKey() {
+        if (!apiKeyInput) return;
+        localStorage.setItem(STORAGE_API_KEY, getApiKey());
+    }
+
+    function parseEnabledFlag(value) {
+        if (typeof value === "boolean") return value;
+        if (typeof value === "string") {
+            return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+        }
+        return Boolean(value);
+    }
+
     function resetApp() {
         currentTaskId = null;
         if (pollTimer) clearInterval(pollTimer);
         pollTimer = null;
         fileInput.value = "";
         progressBar.style.width = "0%";
+        pdfIframe.src = "";
+        if (pdfPreviewDetails) pdfPreviewDetails.open = false;
         setNavbarStatus("Ready", "ready");
         showSection(uploadSection);
     }
@@ -107,6 +196,8 @@
             return;
         }
 
+        if (!ensureApiKeyConfigured()) return;
+
         showSection(processingSection);
         setNavbarStatus("Processing", "processing");
         updateProgressSteps(null);
@@ -117,7 +208,7 @@
         formData.append("file", file);
 
         try {
-            const response = await fetch(`${API_BASE}/upload`, {
+            const response = await apiFetch("/upload", {
                 method: "POST",
                 body: formData,
             });
@@ -146,7 +237,7 @@
         if (!currentTaskId) return;
 
         try {
-            const response = await fetch(`${API_BASE}/status/${currentTaskId}`);
+            const response = await apiFetch(`/status/${currentTaskId}`);
             const data = await response.json();
             const result = data.data || {};
 
@@ -220,7 +311,7 @@
     // ===== Results =====
     async function loadResults() {
         try {
-            const response = await fetch(`${API_BASE}/result/${currentTaskId}`);
+            const response = await apiFetch(`/result/${currentTaskId}`);
             const data = await response.json();
             if (!response.ok || !data.success) {
                 showError(data.message || "Failed to load results.");
@@ -228,6 +319,11 @@
             }
 
             renderResults(data.data);
+            const pdfKeyQuery = authEnabled && getApiKey()
+                ? `?api_key=${encodeURIComponent(getApiKey())}`
+                : "";
+            pdfIframe.src = `${API_BASE}/pdf/${currentTaskId}${pdfKeyQuery}`;
+            if (pdfPreviewDetails) pdfPreviewDetails.open = false;
             setNavbarStatus("Complete", "success");
             showSection(resultsSection);
         } catch (err) {
@@ -283,19 +379,27 @@
 
         // Positions table
         const positionCols = [
-            "line", "stueck", "breite", "hoehe", "links", "rechts",
-            "antrieb", "pos", "bemerkung", "bemerkung_nummer",
+            { key: "line", label: "line" },
+            { key: "stueck", label: "stueck" },
+            { key: "breite", label: "breite" },
+            { key: "hoehe", label: "hoehe" },
+            { key: "links", label: "L" },
+            { key: "rechts", label: "R" },
+            { key: "antrieb", label: "antrieb" },
+            { key: "pos", label: "pos" },
+            { key: "bemerkung", label: "bemerkung" },
+            { key: "bemerkung_nummer", label: "bemerkung_nummer" },
         ];
 
         positionsTableHead.innerHTML = positionCols
-            .map((col) => `<th>${escapeHtml(col)}</th>`)
+            .map((col) => `<th>${escapeHtml(col.label)}</th>`)
             .join("");
 
         positionsTableBody.innerHTML = mappedPositions
             .map(
                 (pos) => `
                 <tr>${positionCols
-                    .map((col) => `<td>${escapeHtml(String(pos[col] || ""))}</td>`)
+                    .map((col) => `<td>${escapeHtml(String(pos[col.key] || ""))}</td>`)
                     .join("")}</tr>`
             )
             .join("");
@@ -318,14 +422,46 @@
     });
 
     // ===== Download =====
-    downloadBtn.addEventListener("click", () => {
+    downloadBtn.addEventListener("click", async () => {
         if (!currentTaskId) return;
-        window.location.href = `${API_BASE}/download/${currentTaskId}`;
+        if (!ensureApiKeyConfigured()) return;
+
+        try {
+            const response = await apiFetch(`/download/${currentTaskId}`);
+            if (!response.ok) {
+                showError("Failed to download TXT file.");
+                return;
+            }
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `output_${currentTaskId}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            showError("Failed to download TXT file.");
+        }
     });
 
     // ===== Reset =====
     newUploadBtn.addEventListener("click", resetApp);
     retryBtn.addEventListener("click", resetApp);
+
+    if (saveApiKeyBtn) {
+        saveApiKeyBtn.addEventListener("click", saveApiKey);
+    }
+
+    if (apiKeyInput) {
+        apiKeyInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") saveApiKey();
+        });
+    }
+
+    initializeAuth();
 
     // ===== Utils =====
     function escapeHtml(text) {

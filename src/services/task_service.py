@@ -196,3 +196,35 @@ class TaskService:
             )
 
         return txt_path
+
+    def get_pdf_path(self, task_id: str) -> Path:
+        """Get the path to the uploaded PDF file for a task.
+
+        Args:
+            task_id: Celery task ID.
+
+        Returns:
+            Path to the uploaded PDF file.
+
+        Raises:
+            AppException: If the task is pending/unknown or the file is missing.
+        """
+        result = celery_app.AsyncResult(task_id)
+
+        if result.state == "PENDING":
+            raise AppException(
+                message="Task not found or still pending",
+                status_code=404,
+                error_code=AppException.TASK_NOT_FOUND,
+            )
+
+        pdf_path = Path(settings.upload_dir) / f"{task_id}.pdf"
+
+        if not pdf_path.exists():
+            raise AppException(
+                message="Uploaded PDF file not found",
+                status_code=404,
+                error_code=AppException.FILE_NOT_FOUND,
+            )
+
+        return pdf_path

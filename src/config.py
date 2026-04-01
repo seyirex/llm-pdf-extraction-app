@@ -102,6 +102,23 @@ class Settings(BaseSettings):
         description="Maximum upload file size in megabytes",
     )
 
+    # Optional API key auth
+    api_key_auth_enabled: bool = Field(
+        default=False,
+        validation_alias="API_KEY_AUTH_ENABLED",
+        description="Enable API key authentication for API endpoints",
+    )
+    api_key: str = Field(
+        default="",
+        validation_alias="API_KEY",
+        description="Expected API key value when auth is enabled",
+    )
+    api_key_header_name: str = Field(
+        default="x-api-key",
+        validation_alias="API_KEY_HEADER_NAME",
+        description="Header name to read API key from",
+    )
+
     # Redis behavior (used by container/runtime configuration)
     redis_appendonly: str = Field(
         default="yes",

@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from pydantic import BaseModel, BeforeValidator, Field
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
 StrCoerce = Annotated[str, BeforeValidator(lambda v: str(v) if v is not None else "")]
 
@@ -43,8 +43,8 @@ class ExtractedPosition(BaseModel):
         description="Quantity (Stück) for this position",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "pos": "EG1",
                 "breite": "1200",
@@ -56,6 +56,7 @@ class ExtractedPosition(BaseModel):
                 "stueck": "1",
             }
         }
+    )
 
 
 class ExtractedHeader(BaseModel):
@@ -106,8 +107,8 @@ class ExtractedHeader(BaseModel):
         description="Total quantity (Stück total / Gesamt)",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "lieferanschrift": "Musterbau & Holztechnik GmbH",
                 "kommission": "U2025-30770",
@@ -122,6 +123,7 @@ class ExtractedHeader(BaseModel):
                 "gesamt": "15",
             }
         }
+    )
 
 
 class ExtractedData(BaseModel):
@@ -136,8 +138,8 @@ class ExtractedData(BaseModel):
         description="List of position rows from the order table",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "header": {
                     "lieferanschrift": "Musterbau & Holztechnik GmbH",
@@ -166,3 +168,4 @@ class ExtractedData(BaseModel):
                 ],
             }
         }
+    )
