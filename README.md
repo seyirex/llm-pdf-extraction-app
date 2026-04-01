@@ -25,16 +25,26 @@ Frontend (HTML/CSS/JS) → FastAPI → Celery Worker → Gemini API
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url>
+git clone git@github.com:seyirex/llm-pdf-extraction-app.git
 cd llm-pdf-extraction-app
 
 # 2. Set up environment
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Edit .env and set GEMINI_API_KEY (required)
 
 # 3. Start all services
 docker compose up --build
 ```
+
+Required for startup:
+- `GEMINI_API_KEY` must be set in `.env` or the extraction pipeline will not run.
+
+Auth mode:
+- API key auth is **off by default**: `API_KEY_AUTH_ENABLED=false`
+- For development, you can turn it on with:
+   - `API_KEY_AUTH_ENABLED=true`
+   - `API_KEY=<your-api-key>`
+   - optional: `API_KEY_HEADER_NAME=x-api-key`
 
 The app will be available at **http://localhost:8083**
 
