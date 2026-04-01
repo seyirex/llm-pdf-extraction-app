@@ -1,6 +1,7 @@
 """Validation service — auto-corrections and domain checks on extracted data."""
 
 from dataclasses import dataclass, field
+import re
 
 from src.schemas.extraction import ExtractedData
 from src.utils.constants import (
@@ -42,8 +43,9 @@ def _apply_typo_corrections(text: str) -> tuple[str, list[str]]:
     corrections_applied: list[str] = []
     corrected = text
     for typo, fix in TYPO_CORRECTIONS.items():
-        if typo in corrected:
-            corrected = corrected.replace(typo, fix)
+        pattern = re.compile(re.escape(typo), flags=re.IGNORECASE)
+        corrected, replacements = pattern.subn(fix, corrected)
+        if replacements > 0:
             corrections_applied.append(f"'{typo}' → '{fix}'")
     return corrected, corrections_applied
 

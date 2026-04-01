@@ -132,6 +132,35 @@ class TestAutoCorrections:
         assert any("Weißt" in c for c in result.corrections)
         assert not any("Unknown Rollladen" in w for w in result.warnings)
 
+    def test_weibt_uppercase_variant_is_corrected(self) -> None:
+        """Uppercase variant of 'Weißt' should also be auto-corrected."""
+        data = ExtractedData(
+            header=ExtractedHeader(
+                lieferanschrift="Test GmbH",
+                kommission="U2025-00001",
+                rollladennummer="1234567890",
+                liefertermin="01.01.2026",
+                rollladen="Aluminium WEISST",
+                konstruktion="Standard",
+                konstruktion_nummer="2960er",
+                aussenschuerze="140 mm Hartschaum",
+                endleiste="Aluminium-Abschlussleiste RAL 9006",
+                antrieb="IO-homecontrol",
+                gesamt="1",
+            ),
+            positions=[
+                ExtractedPosition(
+                    pos="EG1",
+                    breite="1000",
+                    hoehe="1000",
+                    stueck="1",
+                ),
+            ],
+        )
+        result = validate(data)
+        assert result.data.header.rollladen == "Aluminium Weiß"
+        assert not any("Unknown Rollladen" in w for w in result.warnings)
+
 
 class TestUnknownValueWarnings:
     """Tests for warnings on unknown field values."""
