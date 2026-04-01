@@ -49,6 +49,7 @@ MAX_UPLOAD_BYTES: int = MAX_UPLOAD_SIZE_MB * 1024 * 1024
 TYPO_CORRECTIONS: dict[str, str] = {
     "Weift": "Weiß",
     "Weiss": "Weiß",
+    "Weißt": "Weiß",
     "Eicktro": "Elektro",
     "Elekro": "Elektro",
     "Eletro": "Elektro",
